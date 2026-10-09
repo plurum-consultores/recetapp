@@ -137,23 +137,120 @@ function buscar(consulta) {
   return { coinciden, claves };
 }
 
+function enlaceFarmacia(p, texto) {
+  if (!/^https?:\/\//.test(p.url)) return null;
+  const enlace = elemento("a", "", texto);
+  enlace.href = p.url;
+  enlace.target = "_blank";
+  enlace.rel = "noopener noreferrer";
+  return enlace;
+}
+
+function porcentaje(n) {
+  return n < 1 ? "menos del 1 %" : `${Math.round(n)} %`;
+}
+
+// ---------- Misma sustancia, más barato ----------
+
+// Busca, entre los productos con el mismo principio activo y concentración,
+// el de menor precio por unidad y calcula el ahorro frente a `p`.
+function compararConMasBarato(p) {
+  const nombre = `${p.principio_activo} ${p.concentracion}`.trim();
+  if (!p.concentracion) {
+    return { motivo: "Los datos no indican la concentración de este producto, así que no se puede comparar con otros de la misma sustancia." };
+  }
+  if (!p.unidadNum) {
+    return { motivo: "Este producto no informa cuántas unidades trae, así que no se puede comparar por precio por unidad." };
+  }
+  // La lista del grupo ya está ordenada de menor a mayor precio por unidad.
+  const otro = grupos.get(p.clave).find((q) => q !== p && q.unidadNum !== null);
+  if (!otro) {
+    return { motivo: `No hay otro producto con ${nombre} para comparar.` };
+  }
+  if (p.unidadNum <= otro.unidadNum + 0.005) {
+    return { yaEsMasBarato: true, nombre };
+  }
+  const unidades = numero(p.unidades);
+  return {
+    otro,
+    nombre,
+    pct: ((p.unidadNum - otro.unidadNum) / p.unidadNum) * 100,
+    unidades,
+    ahorroPesos: unidades ? (p.unidadNum - otro.unidadNum) * unidades : null,
+  };
+}
+
+function panelMasBarato(p) {
+  const panel = elemento("div", "alternativa");
+  panel.append(elemento("h3", "alternativa-titulo", "Misma sustancia, más barato"));
+  const r = compararConMasBarato(p);
+
+  if (r.motivo) {
+    panel.append(elemento("p", "alternativa-nota", r.motivo));
+    return panel;
+  }
+  if (r.yaEsMasBarato) {
+    panel.append(elemento("p", "alternativa-nota", `Este ya es el producto más barato por unidad con ${r.nombre} entre las farmacias consultadas.`));
+    return panel;
+  }
+
+  const { otro } = r;
+  panel.append(
+    elemento("p", "alternativa-producto", otro.producto),
+    elemento("p", "detalle", [otro.farmacia, otro.marca && `Marca: ${otro.marca}`, otro.presentacion].filter(Boolean).join(" · ")),
+    elemento("p", "alternativa-precio", `${pesos(otro.unidadNum)} por unidad (precio del ${fechaLarga(otro.fecha)})`),
+  );
+
+  const ahorro = elemento("p", "alternativa-ahorro");
+  ahorro.append(elemento("strong", "", `Ahorras ${porcentaje(r.pct)} por unidad`));
+  if (r.ahorroPesos) {
+    ahorro.append(`: ${pesos(r.ahorroPesos)} menos por ${r.unidades} ${r.unidades === 1 ? "unidad" : "unidades"}, la misma cantidad que trae este producto.`);
+  }
+  panel.append(ahorro);
+
+  const enlace = enlaceFarmacia(otro, `Ver en ${otro.farmacia}`);
+  if (enlace) {
+    enlace.className = "alternativa-enlace";
+    panel.append(enlace);
+  }
+  panel.append(elemento("p", "alternativa-nota", "Antes de cambiar de marca, consulta a tu médico o farmacéutico."));
+  return panel;
+}
+
+function alternarPanel(li, boton, p) {
+  const abierto = li.querySelector(".alternativa");
+  // Solo un panel abierto a la vez.
+  for (const otroBoton of $resultados.querySelectorAll('.tarjeta-boton[aria-expanded="true"]')) {
+    otroBoton.setAttribute("aria-expanded", "false");
+    otroBoton.closest(".tarjeta").querySelector(".alternativa")?.remove();
+  }
+  if (abierto) return;
+  boton.setAttribute("aria-expanded", "true");
+  li.querySelector(".pie-tarjeta").before(panelMasBarato(p));
+}
+
 function tarjeta(p, { masBarata, coincide }) {
   const li = elemento("li", "tarjeta" + (masBarata ? " mas-barata" : ""));
 
+  // Toda la información del producto va en un botón: al tocarlo se abre "Misma sustancia, más barato".
+  const boton = elemento("button", "tarjeta-boton");
+  boton.type = "button";
+  boton.setAttribute("aria-expanded", "false");
+
   if (masBarata || coincide) {
-    const etiquetas = elemento("div", "etiquetas");
+    const etiquetas = elemento("span", "etiquetas");
     if (masBarata) etiquetas.append(elemento("span", "etiqueta barata", "Más barata"));
     if (coincide) etiquetas.append(elemento("span", "etiqueta coincide", "Coincide con tu búsqueda"));
-    li.append(etiquetas);
+    boton.append(etiquetas);
   }
 
-  li.append(
-    elemento("p", "farmacia", p.farmacia),
-    elemento("p", "producto", p.producto),
-    elemento("p", "detalle", [p.marca && `Marca: ${p.marca}`, p.presentacion].filter(Boolean).join(" · ")),
+  boton.append(
+    elemento("span", "farmacia", p.farmacia),
+    elemento("span", "producto", p.producto),
+    elemento("span", "detalle", [p.marca && `Marca: ${p.marca}`, p.presentacion].filter(Boolean).join(" · ")),
   );
 
-  const precios = elemento("div", "precios");
+  const precios = elemento("span", "precios");
   const unidad = elemento("span", "precio-unidad");
   if (p.unidadNum) {
     unidad.append(pesos(p.unidadNum), " ", elemento("small", "", "por unidad"));
@@ -161,17 +258,14 @@ function tarjeta(p, { masBarata, coincide }) {
     unidad.append(elemento("small", "", "Sin precio por unidad"));
   }
   precios.append(unidad, elemento("span", "precio-total", p.precioNum ? `${pesos(p.precioNum)} la presentación` : "Precio no disponible"));
-  li.append(precios);
+  boton.append(precios, elemento("span", "ver-alternativa", "Misma sustancia, más barato"));
+  boton.addEventListener("click", () => alternarPanel(li, boton, p));
+  li.append(boton);
 
   const pie = elemento("div", "pie-tarjeta");
   pie.append(elemento("span", "", `${p.farmacia} · precio del ${fechaLarga(p.fecha)}`));
-  if (/^https?:\/\//.test(p.url)) {
-    const enlace = elemento("a", "", "Ver en la farmacia");
-    enlace.href = p.url;
-    enlace.target = "_blank";
-    enlace.rel = "noopener noreferrer";
-    pie.append(enlace);
-  }
+  const enlace = enlaceFarmacia(p, "Ver en la farmacia");
+  if (enlace) pie.append(enlace);
   li.append(pie);
   return li;
 }

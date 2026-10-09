@@ -149,6 +149,7 @@ body {
 
 .tarjetas {
   display: grid;
+  align-items: start; /* abrir un panel no estira las demás tarjetas de la fila */
   gap: 10px;
   margin: 0;
   padding: 0;
@@ -169,6 +170,83 @@ body {
   border: 2px solid var(--acento);
   background: var(--acento-suave);
 }
+
+.tarjeta-boton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.tarjeta-boton:focus-visible {
+  outline: 3px solid var(--acento);
+  outline-offset: 6px;
+  border-radius: 4px;
+}
+
+.farmacia,
+.producto,
+.detalle { display: block; }
+
+.ver-alternativa {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--acento);
+}
+
+.ver-alternativa::after { content: " ▾"; }
+.tarjeta-boton[aria-expanded="true"] .ver-alternativa::after { content: " ▴"; }
+
+/* Misma sustancia, más barato */
+
+.alternativa {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--fondo);
+  border: 1px dashed var(--acento);
+  border-radius: 8px;
+}
+
+.alternativa-titulo {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  color: var(--acento);
+}
+
+.alternativa-producto {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.alternativa-precio { margin: 6px 0 0; font-weight: 600; }
+
+.alternativa-ahorro { margin: 6px 0 0; }
+
+.alternativa-ahorro strong { color: var(--acento); }
+
+.alternativa-enlace {
+  display: inline-block;
+  margin-top: 8px;
+  font-weight: 700;
+  color: var(--acento);
+}
+
+.alternativa-nota {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+/* Cuando el panel solo trae una explicación, se lee como texto normal. */
+.alternativa-titulo + .alternativa-nota { margin-top: 0; font-size: 0.95rem; color: var(--texto); }
 
 .etiquetas {
   display: flex;
