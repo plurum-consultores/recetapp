@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RecetApp · Compara precios de medicamentos</title>
+  <meta name="description" content="Compara precios de medicamentos entre farmacias de Colombia y encuentra la opción más barata con la misma sustancia.">
+  <link rel="stylesheet" href="estilos.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="encabezado">
+    <h1 class="marca">RecetApp</h1>
+    <p class="lema">Compara precios de medicamentos entre farmacias de Colombia.</p>
+    <p class="fecha-datos" id="fecha-datos">Cargando precios…</p>
+  </header>
+
+  <main class="contenido">
+    <form class="buscador" role="search" id="buscador">
+      <label for="busqueda">Busca por nombre, marca o principio activo</label>
+      <input id="busqueda" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Ej.: losartán, Dolex, ibuprofeno" disabled>
+    </form>
+
+    <p class="estado" id="estado" aria-live="polite"></p>
+
+    <div id="sugerencias" class="sugerencias" hidden>
+      <span>Prueba con:</span>
+      <button type="button" data-busqueda="losartan">losartán</button>
+      <button type="button" data-busqueda="Dolex">Dolex</button>
+      <button type="button" data-busqueda="ibuprofeno 400">ibuprofeno 400</button>
+      <button type="button" data-busqueda="atorvastatina">atorvastatina</button>
+    </div>
+
+    <div id="resultados"></div>
+
+    <noscript><p class="estado">RecetApp necesita JavaScript para buscar precios.</p></noscript>
+  </main>
+
+  <footer class="aviso" role="note">
+    RecetApp compara precios; no reemplaza la indicación de tu médico o farmacéutico
+  </footer>
+</body>
+</html>
