@@ -17,7 +17,7 @@ import urllib.request
 import urllib.robotparser
 from pathlib import Path
 
-USER_AGENT = "RecetAppBot/0.1 (comparador de precios; jose.caro@plurum.co)"
+USER_AGENT = "RecetAppBot/0.1 (comparador de precios; +https://github.com/plurum-consultores/recetapp)"
 BASE = "https://www.larebajavirtual.com"
 BUSQUEDA = BASE + "/api/catalog_system/pub/products/search?ft={termino}&_from=0&_to=49"
 FARMACIA = "La Rebaja"
